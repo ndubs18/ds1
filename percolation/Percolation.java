@@ -31,7 +31,7 @@ public class Percolation {
             wqfFull.union(i, 0);
         }
         // merge bottom row to virtual bottom
-        for (int i = nSquared; i > (nSquared - n); ++i) {
+        for (int i = nSquared; i > (nSquared - n); --i) {
             wqfGrid.union(i, nSquared + 1);
         }
 
@@ -42,35 +42,67 @@ public class Percolation {
         if (!validate(row, col)) {
             throw new ArrayIndexOutOfBoundsException("Grid coordinates are not valid");
         }
-        else if (!grid[flatCoords(row, col)]) {
-            int coords = flatCoords(row, col);
-            grid[coords] = true;
+
+        int index = flatCoords(row, col);
+
+        if (!grid[index]) {
+            grid[index] = true;
             openSites++;
         }
+        else return;
 
-        if (isOpen(row - 1, col)) {
+        // index to union with original
+        int tempIndex;
 
-        }
-
-        if (isOpen(row, col + 1)) {
-
-        }
-
-        if (isOpen(row + 1, col)) {
-
-        }
-
-        if (isOpen(row, col - 1)) {
+        // top
+        if (validate(row - 1, col) && isOpen(row - 1, col)) {
+            tempIndex = flatCoords(row - 1, col);
+            wqfFull.union(index + 1, tempIndex + 1);
+            wqfGrid.union(index + 1, tempIndex + 1);
 
         }
+        // bottom
+        if (validate(row + 1, col) && isOpen(row + 1, col)) {
+            tempIndex = flatCoords(row + 1, col);
+            wqfFull.union(index + 1, tempIndex + 1);
+            wqfGrid.union(index + 1, tempIndex + 1);
+        }
+        // right
+        if (validate(row, col + 1) && isOpen(row, col + 1)) {
+            tempIndex = flatCoords(row, col + 1);
+            wqfFull.union(index + 1, tempIndex + 1);
+            wqfGrid.union(index + 1, tempIndex + 1);
+        }
+        // left
+        if (validate(row, col - 1) && isOpen(row, col - 1)) {
+            tempIndex = flatCoords(row, col - 1);
+            wqfFull.union(index + 1, tempIndex + 1);
+            wqfGrid.union(index + 1, tempIndex + 1);
+        }
+
     }
 
     public boolean isOpen(int row, int col) {
-        int coords = flatCoords(row, col);
-        return grid[coords];
+        if (!validate(row, col)) {
+            throw new ArrayIndexOutOfBoundsException();
+        }
+        int coord = flatCoords(row, col);
+        return grid[coord];
     }
 
-    public boolean ifFull(int row, int col) {
+    public boolean isFull(int row, int col) {
+        if (!validate(row, col)) {
+            throw new ArrayIndexOutOfBoundsException();
+        }
+
+        if (isOpen(row, col)) {
+            // get index and adjust for data structure with virtual top row (everything shifted to the right one)
+            int coord = flatCoords(row, col) + 1;
+            if (coord <= N) return true;
+
+            return wqfFull.find(coord) == wqfFull.find(0);
+        }
+
         return false;
     }
 
@@ -79,12 +111,25 @@ public class Percolation {
     }
 
     public boolean percolates() {
-        return false;
+        // we don't use the isFull definition
+        int virtualTop = 0;
+        int virtualBottom = N * N + 1;
+
+        // corner case: 1 site
+        if (virtualBottom == 2) {
+            return isOpen(1, 1);
+        }
+
+        // corner case: no sites
+        if (virtualBottom == 0) {
+            return false;
+        }
+
+        return wqfGrid.find(virtualTop) == wqfGrid.find(virtualBottom);
     }
 
     private boolean validate(int x, int y) {
-        if (x < 0 && x > N) return false;
-        else if (y < 0 && y > N) return false;
+        if ((x < 1 || x > N) || (y < 1 || y > N)) return false;
         return true;
 
     }
